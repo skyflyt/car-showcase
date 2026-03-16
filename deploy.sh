@@ -9,6 +9,8 @@ cd "$APP_DIR"
 sudo -u "$APP_USER" git fetch origin
 sudo -u "$APP_USER" git reset --hard origin/main
 sudo -u "$APP_USER" npm ci
+sudo -u "$APP_USER" npx prisma generate
+sudo -u "$APP_USER" npx prisma db push
 sudo -u "$APP_USER" npm run build
 systemctl restart "$SERVICE_NAME"
 systemctl --no-pager status "$SERVICE_NAME"

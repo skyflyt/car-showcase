@@ -7,9 +7,19 @@ interface Props {
   images: string[];
   alt: string;
   intervalMs?: number;
+  mode?: "interactive" | "display";
+  paused?: boolean;
+  onSlideChange?: (index: number) => void;
 }
 
-export function Slideshow({ images, alt, intervalMs = 6000 }: Props) {
+export function Slideshow({
+  images,
+  alt,
+  intervalMs = 6000,
+  mode = "interactive",
+  paused = false,
+  onSlideChange,
+}: Props) {
   const [current, setCurrent] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -22,10 +32,11 @@ export function Slideshow({ images, alt, intervalMs = 6000 }: Props) {
       setIsTransitioning(true);
       setTimeout(() => {
         setCurrent(index);
+        onSlideChange?.(index);
         setTimeout(() => setIsTransitioning(false), 100);
       }, 500);
     },
-    [isTransitioning]
+    [isTransitioning, onSlideChange]
   );
 
   const next = useCallback(() => {
@@ -38,15 +49,17 @@ export function Slideshow({ images, alt, intervalMs = 6000 }: Props) {
 
   // Auto-advance
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || paused) return;
     timeoutRef.current = setTimeout(next, intervalMs);
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [current, isPaused, intervalMs, next]);
+  }, [current, isPaused, paused, intervalMs, next]);
 
-  // Touch/click handlers for manual navigation
+  // Touch/click handlers — only in interactive mode
   const handleInteraction = (e: React.MouseEvent | React.TouchEvent) => {
+    if (mode === "display") return;
+
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const clientX =
       "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
@@ -57,7 +70,6 @@ export function Slideshow({ images, alt, intervalMs = 6000 }: Props) {
     if (isLeftHalf) prev();
     else next();
 
-    // Resume auto-advance after 15s of no interaction
     if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current);
     pauseTimeoutRef.current = setTimeout(() => setIsPaused(false), 15000);
   };
@@ -95,16 +107,14 @@ export function Slideshow({ images, alt, intervalMs = 6000 }: Props) {
         />
       </div>
 
-      {/* Progress dots (subtle, bottom center) */}
+      {/* Progress indicator */}
       <div className="absolute bottom-44 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
         {images.length <= 30 ? (
           images.map((_, i) => (
             <div
               key={i}
               className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                i === current
-                  ? "bg-white/80 scale-125"
-                  : "bg-white/20 hover:bg-white/40"
+                i === current ? "bg-white/80 scale-125" : "bg-white/20"
               }`}
             />
           ))

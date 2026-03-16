@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Car {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  year                Int
+  make                String
+  model               String
+  subtitle            String   @default("")
+  color               String   @default("")
+  heroImage           String   @default("")
+  description         String   @default("")
+  story               String   @default("")
+  stats               Json     @default("{}")
+  highlights          Json     @default("[]")
+  auctionInfo         Json?
+  images              Json     @default("[]")
+  storyDismissSeconds Int      @default(30)
+  slideshowIntervalMs Int      @default(6000)
+  displayMode         String   @default("interactive")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}

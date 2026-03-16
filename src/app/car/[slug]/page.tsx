@@ -1,53 +1,55 @@
-import { cars } from "@/data/cars";
+import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { Slideshow } from "@/components/Slideshow";
-import { StatsPanel } from "@/components/StatsPanel";
+import { CarDisplay } from "@/components/CarDisplay";
+import type { CarData } from "@/lib/types";
+
+// Dynamic rendering — data comes from database
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  return Object.keys(cars).map((slug) => ({ slug }));
+  searchParams: Promise<{ mode?: string }>;
 }
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const car = cars[slug];
+  const car = await prisma.car.findUnique({ where: { slug } });
   if (!car) return { title: "Not Found" };
   return { title: `${car.year} ${car.make} ${car.model}` };
 }
 
-export default async function CarPage({ params }: Props) {
+export default async function CarPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const car = cars[slug];
-  if (!car) notFound();
+  const { mode: queryMode } = await searchParams;
 
-  return (
-    <main className="h-screen w-screen overflow-hidden bg-black text-white relative">
-      <Slideshow images={car.images} alt={`${car.year} ${car.make} ${car.model}`} />
-      <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
-        <div className="bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-32 pb-8 px-8">
-          <div className="max-w-screen-2xl mx-auto pointer-events-auto">
-            <div className="mb-4">
-              <h1 className="text-5xl font-light tracking-tight">
-                <span className="text-white/60">{car.year}</span>{" "}
-                <span className="font-semibold">{car.make}</span>{" "}
-                <span className="italic">{car.model}</span>
-              </h1>
-              <p className="text-lg text-white/50 mt-1 tracking-wide uppercase">
-                {car.subtitle}
-              </p>
-            </div>
-            <StatsPanel stats={car.stats} />
-          </div>
-        </div>
-      </div>
-      <div className="absolute top-6 right-8 z-10">
-        <div className="text-white/20 text-sm tracking-[0.3em] uppercase font-light">
-          Jacobs Entertainment
-        </div>
-      </div>
-    </main>
-  );
+  const dbCar = await prisma.car.findUnique({ where: { slug } });
+  if (!dbCar) notFound();
+
+  const car: CarData = {
+    id: dbCar.id,
+    slug: dbCar.slug,
+    year: dbCar.year,
+    make: dbCar.make,
+    model: dbCar.model,
+    subtitle: dbCar.subtitle,
+    color: dbCar.color,
+    heroImage: dbCar.heroImage,
+    stats: dbCar.stats as CarData["stats"],
+    description: dbCar.description,
+    story: dbCar.story,
+    highlights: dbCar.highlights as string[],
+    auctionInfo: dbCar.auctionInfo as CarData["auctionInfo"],
+    images: dbCar.images as string[],
+    storyDismissSeconds: dbCar.storyDismissSeconds,
+    slideshowIntervalMs: dbCar.slideshowIntervalMs,
+    displayMode: dbCar.displayMode,
+  };
+
+  // URL param overrides the database default
+  const mode =
+    queryMode === "display" || queryMode === "interactive"
+      ? queryMode
+      : (car.displayMode as "interactive" | "display");
+
+  return <CarDisplay car={car} mode={mode} />;
 }

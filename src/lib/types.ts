@@ -7,7 +7,7 @@ export interface CarStats {
   transmission: string;
   weight: string;
   production: string;
-  [key: string]: string; // allow additional stats
+  [key: string]: string;
 }
 
 export interface AuctionInfo {
@@ -19,6 +19,7 @@ export interface AuctionInfo {
 }
 
 export interface CarData {
+  id: string;
   slug: string;
   year: number;
   make: string;
@@ -28,7 +29,11 @@ export interface CarData {
   heroImage: string;
   stats: CarStats;
   description: string;
+  story: string;
   highlights: string[];
-  auctionInfo?: AuctionInfo;
+  auctionInfo?: AuctionInfo | null;
   images: string[];
+  storyDismissSeconds: number;
+  slideshowIntervalMs: number;
+  displayMode: string;
 }

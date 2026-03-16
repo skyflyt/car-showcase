@@ -5,6 +5,7 @@ import type { CarStats } from "@/lib/types";
 
 interface Props {
   stats: CarStats;
+  mode?: "interactive" | "display";
 }
 
 const statLabels: Record<string, string> = {
@@ -29,8 +30,8 @@ const statIcons: Record<string, string> = {
   production: "\uD83D\uDD12",
 };
 
-export function StatsPanel({ stats }: Props) {
-  const [expanded, setExpanded] = useState(false);
+export function StatsPanel({ stats, mode = "interactive" }: Props) {
+  const [expanded, setExpanded] = useState(mode === "display");
   const entries = Object.entries(stats);
   const visible = expanded ? entries : entries.slice(0, 5);
 
@@ -40,7 +41,7 @@ export function StatsPanel({ stats }: Props) {
         {visible.map(([key, value]) => (
           <button
             key={key}
-            onClick={() => setExpanded(!expanded)}
+            onClick={() => mode === "interactive" && setExpanded(!expanded)}
             className="group text-left"
           >
             <div className="text-white/40 text-xs uppercase tracking-wider mb-0.5">
@@ -51,7 +52,7 @@ export function StatsPanel({ stats }: Props) {
             </div>
           </button>
         ))}
-        {!expanded && entries.length > 5 && (
+        {!expanded && entries.length > 5 && mode === "interactive" && (
           <button
             onClick={() => setExpanded(true)}
             className="self-end text-white/30 text-sm hover:text-white/60 transition-colors mb-1"

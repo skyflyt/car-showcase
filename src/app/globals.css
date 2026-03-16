@@ -23,3 +23,81 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* Story panel slide animation */
+.story-panel {
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.story-panel-open {
+  transform: translateX(0);
+}
+
+.story-panel-closed {
+  transform: translateX(100%);
+}
+
+/* Progress bar countdown */
+@keyframes countdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.countdown-bar {
+  animation: countdown var(--dismiss-duration) linear forwards;
+}
+
+/* Admin styles */
+.admin-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  color: white;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.admin-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.admin-btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.admin-btn-primary {
+  background: white;
+  color: black;
+}
+
+.admin-btn-primary:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.admin-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.admin-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.admin-btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.admin-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
