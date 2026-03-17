@@ -108,6 +108,15 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
     setDragOverIdx(null);
   }, []);
 
+  // Pad imageSettings to match images length so indices stay aligned
+  const padSettings = (images: string[], settings: ImageEntry[]): ImageEntry[] => {
+    const padded = [...settings];
+    while (padded.length < images.length) {
+      padded.push({ url: images[padded.length] || "" });
+    }
+    return padded;
+  };
+
   const handleDrop = useCallback((e: React.DragEvent, toIdx: number) => {
     e.preventDefault();
     const fromIdx = dragIdx;
@@ -118,9 +127,9 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
       const newImages = [...prev.images];
       const [moved] = newImages.splice(fromIdx, 1);
       newImages.splice(toIdx, 0, moved);
-      const newSettings = [...prev.imageSettings];
+      const newSettings = padSettings(prev.images, prev.imageSettings);
       const [movedSetting] = newSettings.splice(fromIdx, 1);
-      if (movedSetting) newSettings.splice(toIdx, 0, movedSetting);
+      newSettings.splice(toIdx, 0, movedSetting);
       return { ...prev, images: newImages, imageSettings: newSettings };
     });
   }, [dragIdx]);
@@ -231,7 +240,8 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
   const removeImage = (index: number) => {
     setForm((prev) => {
       const newImages = prev.images.filter((_, i) => i !== index);
-      const newSettings = prev.imageSettings.filter((_, i) => i !== index);
+      const paddedSettings = padSettings(prev.images, prev.imageSettings);
+      const newSettings = paddedSettings.filter((_, i) => i !== index);
       return {
         ...prev,
         images: newImages,
@@ -255,9 +265,9 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
       const newImages = [...prev.images];
       const [moved] = newImages.splice(from, 1);
       newImages.splice(to, 0, moved);
-      const newSettings = [...prev.imageSettings];
+      const newSettings = padSettings(prev.images, prev.imageSettings);
       const [movedSetting] = newSettings.splice(from, 1);
-      if (movedSetting) newSettings.splice(to, 0, movedSetting);
+      newSettings.splice(to, 0, movedSetting);
       return { ...prev, images: newImages, imageSettings: newSettings };
     });
   };
