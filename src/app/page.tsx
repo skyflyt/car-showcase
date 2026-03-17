@@ -13,7 +13,7 @@ export default async function Home() {
         <div className="flex items-center justify-between mb-12">
           <div>
             <h1 className="text-4xl font-light tracking-tight mb-2">
-              Car <span className="font-semibold">Showcase</span>
+              The <span className="font-semibold">Garage</span>
             </h1>
             <p className="text-white/40 text-lg">Select a vehicle to display</p>
           </div>

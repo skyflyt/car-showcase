@@ -86,9 +86,12 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
   const [editingImageIdx, setEditingImageIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isVideo = (url: string) =>
+    /\.(mp4|webm|mov|avi|mkv|m4v|ogv)(\?|$)/i.test(url);
+
   const sections = [
     { key: "basic", label: "Basic Info" },
-    { key: "images", label: "Images" },
+    { key: "media", label: "Media" },
     { key: "specs", label: "Specifications" },
     { key: "story", label: "Story & Description" },
     { key: "highlights", label: "Highlights" },
@@ -375,13 +378,13 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
         </div>
       )}
 
-      {/* Images */}
-      {activeSection === "images" && (
+      {/* Media */}
+      {activeSection === "media" && (
         <div className="space-y-6">
           <h2 className="text-xl font-semibold mb-4">
-            Images
+            Media
             <span className="text-white/30 text-sm font-light ml-3">
-              {form.images.length} photos
+              {form.images.length} items
             </span>
           </h2>
 
@@ -390,7 +393,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               multiple
               onChange={handleFileUpload}
               className="hidden"
@@ -406,11 +409,11 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                   Uploading...
                 </>
               ) : (
-                <>Upload Photos</>
+                <>Upload Media</>
               )}
             </button>
             <span className="text-white/30 text-xs">
-              Select one or more images from your computer
+              Select images or videos from your computer
             </span>
           </div>
 
@@ -428,21 +431,39 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
             </button>
           </div>
 
-          {/* Image grid */}
+          {/* Media grid */}
           <div className="grid grid-cols-4 gap-3">
             {form.images.map((url, i) => {
               const setting = getImageSetting(i);
               const hasSettings = setting.transition || setting.caption;
+              const videoFile = isVideo(url);
               return (
                 <div key={i} className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-white/5">
-                  <Image
-                    src={url}
-                    alt={`Photo ${i + 1}`}
-                    fill
-                    className="object-cover cursor-pointer"
-                    unoptimized
-                    onClick={() => setPreviewImage(url)}
-                  />
+                  {videoFile ? (
+                    <video
+                      src={url}
+                      className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+                      muted
+                      playsInline
+                      preload="metadata"
+                      onClick={() => setPreviewImage(url)}
+                    />
+                  ) : (
+                    <Image
+                      src={url}
+                      alt={`Media ${i + 1}`}
+                      fill
+                      className="object-cover cursor-pointer"
+                      unoptimized
+                      onClick={() => setPreviewImage(url)}
+                    />
+                  )}
+                  {/* Video badge */}
+                  {videoFile && (
+                    <div className="absolute top-2 left-2 bg-purple-500/70 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded z-10">
+                      Video
+                    </div>
+                  )}
                   {/* Hero badge */}
                   {url === form.heroImage && (
                     <div className="absolute top-2 left-2 bg-white/90 text-black text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
@@ -463,42 +484,42 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                   {/* Controls overlay */}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent pt-6 pb-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                     <button
-                      onClick={() => setEditingImageIdx(editingImageIdx === i ? null : i)}
+                      onClick={(e) => { e.stopPropagation(); setEditingImageIdx(editingImageIdx === i ? null : i); }}
                       className="text-xs bg-blue-500/30 hover:bg-blue-500/50 px-2 py-1 rounded"
                       title="Edit settings"
                     >
                       Edit
                     </button>
                     <button
-                      onClick={() => setPreviewImage(url)}
+                      onClick={(e) => { e.stopPropagation(); setPreviewImage(url); }}
                       className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
                     >
                       View
                     </button>
                     {url !== form.heroImage && (
                       <button
-                        onClick={() => setAsHero(url)}
+                        onClick={(e) => { e.stopPropagation(); setAsHero(url); }}
                         className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
                       >
                         Hero
                       </button>
                     )}
                     <button
-                      onClick={() => moveImage(i, i - 1)}
+                      onClick={(e) => { e.stopPropagation(); moveImage(i, i - 1); }}
                       className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
                       disabled={i === 0}
                     >
                       &larr;
                     </button>
                     <button
-                      onClick={() => moveImage(i, i + 1)}
+                      onClick={(e) => { e.stopPropagation(); moveImage(i, i + 1); }}
                       className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
                       disabled={i === form.images.length - 1}
                     >
                       &rarr;
                     </button>
                     <button
-                      onClick={() => removeImage(i)}
+                      onClick={(e) => { e.stopPropagation(); removeImage(i); }}
                       className="text-xs bg-red-500/40 hover:bg-red-500/60 px-2 py-1 rounded"
                     >
                       &times;
@@ -514,7 +535,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
             <div className="p-4 rounded-lg bg-white/5 border border-white/10 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white/70">
-                  Image {editingImageIdx + 1} Settings
+                  Media {editingImageIdx + 1} Settings
                 </h3>
                 <button
                   onClick={() => setEditingImageIdx(null)}
@@ -606,15 +627,24 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                   </button>
                 </>
               )}
-              <div className="relative w-full h-full max-w-[90vw] max-h-[85vh]">
-                <Image
-                  src={previewImage}
-                  alt="Preview"
-                  fill
-                  className="object-contain"
-                  unoptimized
-                  onClick={(e) => e.stopPropagation()}
-                />
+              <div className="relative w-full h-full max-w-[90vw] max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+                {isVideo(previewImage) ? (
+                  <video
+                    src={previewImage}
+                    className="w-full h-full object-contain"
+                    controls
+                    autoPlay
+                    muted
+                  />
+                ) : (
+                  <Image
+                    src={previewImage}
+                    alt="Preview"
+                    fill
+                    className="object-contain"
+                    unoptimized
+                  />
+                )}
               </div>
               <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-sm">
                 {form.images.indexOf(previewImage) + 1} / {form.images.length}
@@ -814,7 +844,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                 ))}
               </select>
               <p className="text-white/20 text-xs mt-1">
-                Applied to all images unless overridden per-image
+                Applied to all media unless overridden per-item
               </p>
             </div>
           </div>
