@@ -36,6 +36,7 @@ export default async function EditCarPage({ params }: Props) {
     images: car.images as string[],
     storyDismissSeconds: car.storyDismissSeconds,
     slideshowIntervalMs: car.slideshowIntervalMs,
+    statsExpanded: car.statsExpanded,
     displayMode: car.displayMode,
   };
 

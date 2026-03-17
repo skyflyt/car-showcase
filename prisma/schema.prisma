@@ -24,6 +24,7 @@ model Car {
   images              Json     @default("[]")
   storyDismissSeconds Int      @default(30)
   slideshowIntervalMs Int      @default(6000)
+  statsExpanded       Boolean  @default(false)
   displayMode         String   @default("interactive")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

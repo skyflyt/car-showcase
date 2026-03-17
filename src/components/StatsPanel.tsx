@@ -6,6 +6,7 @@ import type { CarStats } from "@/lib/types";
 interface Props {
   stats: CarStats;
   mode?: "interactive" | "display";
+  startExpanded?: boolean;
 }
 
 const statLabels: Record<string, string> = {
@@ -30,8 +31,8 @@ const statIcons: Record<string, string> = {
   production: "\uD83D\uDD12",
 };
 
-export function StatsPanel({ stats, mode = "interactive" }: Props) {
-  const [expanded, setExpanded] = useState(mode === "display");
+export function StatsPanel({ stats, mode = "interactive", startExpanded = false }: Props) {
+  const [expanded, setExpanded] = useState(mode === "display" || startExpanded);
   const entries = Object.entries(stats);
   const visible = expanded ? entries : entries.slice(0, 5);
 

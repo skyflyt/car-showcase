@@ -12,6 +12,9 @@ interface Props {
   onSlideChange?: (index: number) => void;
 }
 
+// Track which images are low-res relative to the viewport
+type ImageSizing = "cover" | "contain";
+
 export function Slideshow({
   images,
   alt,
@@ -23,8 +26,26 @@ export function Slideshow({
   const [current, setCurrent] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [imageSizing, setImageSizing] = useState<Record<number, ImageSizing>>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Detect low-res images when they load
+  const handleImageLoad = useCallback(
+    (index: number, e: React.SyntheticEvent<HTMLImageElement>) => {
+      const img = e.currentTarget;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      // If image doesn't fill at least 85% of viewport in both dimensions, it's "low-res"
+      const isLowRes =
+        img.naturalWidth < vw * 0.85 || img.naturalHeight < vh * 0.85;
+      setImageSizing((prev) => ({
+        ...prev,
+        [index]: isLowRes ? "contain" : "cover",
+      }));
+    },
+    []
+  );
 
   const goTo = useCallback(
     (index: number) => {
@@ -74,12 +95,30 @@ export function Slideshow({
     pauseTimeoutRef.current = setTimeout(() => setIsPaused(false), 15000);
   };
 
+  const sizing = imageSizing[current] || "cover";
+  const nextIdx = (current + 1) % images.length;
+
   return (
     <div
       className="absolute inset-0 cursor-none"
       onClick={handleInteraction}
       onTouchStart={handleInteraction}
     >
+      {/* Blurred background layer — only shown for low-res images */}
+      {sizing === "contain" && (
+        <div className="absolute inset-0">
+          <Image
+            src={images[current]}
+            alt=""
+            fill
+            className="object-cover scale-110"
+            style={{ filter: "blur(40px) brightness(0.4)" }}
+            unoptimized
+            aria-hidden
+          />
+        </div>
+      )}
+
       {/* Current image */}
       <div
         className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
@@ -90,20 +129,22 @@ export function Slideshow({
           src={images[current]}
           alt={`${alt} - Photo ${current + 1}`}
           fill
-          className="object-cover"
+          className={sizing === "contain" ? "object-contain" : "object-cover"}
           priority={current < 3}
           unoptimized
+          onLoad={(e) => handleImageLoad(current, e)}
         />
       </div>
 
-      {/* Preload next image */}
+      {/* Preload next image (hidden, but triggers onLoad for sizing detection) */}
       <div className="hidden">
         <Image
-          src={images[(current + 1) % images.length]}
+          src={images[nextIdx]}
           alt="preload"
           width={1}
           height={1}
           unoptimized
+          onLoad={(e) => handleImageLoad(nextIdx, e)}
         />
       </div>
 

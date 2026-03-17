@@ -33,6 +33,7 @@ export async function POST(request: Request) {
       images: data.images || [],
       storyDismissSeconds: parseInt(data.storyDismissSeconds) || 30,
       slideshowIntervalMs: parseInt(data.slideshowIntervalMs) || 6000,
+      statsExpanded: !!data.statsExpanded,
       displayMode: data.displayMode || "interactive",
     },
   });

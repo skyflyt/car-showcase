@@ -86,7 +86,7 @@ export function CarDisplay({ car, mode }: Props) {
                 </button>
               )}
             </div>
-            <StatsPanel stats={car.stats} mode={mode} />
+            <StatsPanel stats={car.stats} mode={mode} startExpanded={car.statsExpanded} />
           </div>
         </div>
       </div>
