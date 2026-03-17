@@ -137,3 +137,40 @@ select.admin-input option {
 .admin-btn-danger:hover {
   background: rgba(239, 68, 68, 0.25);
 }
+
+.admin-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Focus styles for accessibility */
+.admin-input:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+.admin-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+/* Allow text selection in admin forms */
+.admin-input,
+.admin-input * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .story-panel { transition: none; }
+  .countdown-bar { animation: none; }
+  .animate-caption-in { animation: none; opacity: 1; }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
