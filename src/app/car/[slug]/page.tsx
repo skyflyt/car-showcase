@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, type DbCar } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { CarDisplay } from "@/components/CarDisplay";
 import type { CarData } from "@/lib/types";
@@ -13,7 +13,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const car = await prisma.car.findUnique({ where: { slug } });
+  const car = (await prisma.car.findUnique({ where: { slug } })) as DbCar | null;
   if (!car) return { title: "Not Found" };
   return { title: `${car.year} ${car.make} ${car.model}` };
 }
@@ -22,7 +22,7 @@ export default async function CarPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { mode: queryMode } = await searchParams;
 
-  const dbCar = await prisma.car.findUnique({ where: { slug } });
+  const dbCar = (await prisma.car.findUnique({ where: { slug } })) as DbCar | null;
   if (!dbCar) notFound();
 
   const car: CarData = {

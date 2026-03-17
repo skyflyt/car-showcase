@@ -11,3 +11,26 @@ function createClient() {
 export const prisma = globalForPrisma.prisma || createClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+/** Awaited return type of prisma.car.findMany()[0] */
+export type DbCar = {
+  id: string;
+  slug: string;
+  year: number;
+  make: string;
+  model: string;
+  subtitle: string;
+  color: string;
+  heroImage: string;
+  description: string;
+  story: string;
+  stats: unknown;
+  highlights: unknown;
+  auctionInfo: unknown;
+  images: unknown;
+  storyDismissSeconds: number;
+  slideshowIntervalMs: number;
+  displayMode: string;
+  createdAt: Date;
+  updatedAt: Date;
+};

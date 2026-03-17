@@ -1,14 +1,11 @@
-import { prisma } from "@/lib/db";
+import { prisma, type DbCar } from "@/lib/db";
 import Link from "next/link";
 import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const cars = await prisma.car.findMany({ orderBy: { year: "desc" } }) as Array<{
-    id: string; slug: string; year: number; make: string; model: string;
-    subtitle: string; heroImage: string; images: unknown; displayMode: string;
-  }>;
+  const cars = (await prisma.car.findMany({ orderBy: { year: "desc" } })) as DbCar[];
 
   return (
     <div>

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, type DbCar } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { AdminCarForm } from "@/components/AdminCarForm";
 
@@ -10,7 +10,7 @@ interface Props {
 
 export default async function EditCarPage({ params }: Props) {
   const { id } = await params;
-  const car = await prisma.car.findUnique({ where: { id } });
+  const car = (await prisma.car.findUnique({ where: { id } })) as DbCar | null;
   if (!car) notFound();
 
   const formData = {
