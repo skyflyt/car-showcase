@@ -10,7 +10,7 @@ export default async function AdminPage() {
   return (
     <div>
       <h1 className="text-2xl font-light tracking-tight mb-8">
-        All <span className="font-semibold">Vehicles</span>
+        The <span className="font-semibold">Garage</span>
         <span className="text-white/30 ml-3 text-sm">{cars.length} total</span>
       </h1>
 
@@ -53,7 +53,7 @@ export default async function AdminPage() {
               </p>
               <p className="text-white/40 text-sm">{car.subtitle}</p>
               <div className="flex gap-4 mt-1 text-xs text-white/25">
-                <span>{(car.images as string[]).length} photos</span>
+                <span>{(car.images as string[]).length} media</span>
                 <span>{car.displayMode} mode</span>
                 <span>/{car.slug}</span>
               </div>

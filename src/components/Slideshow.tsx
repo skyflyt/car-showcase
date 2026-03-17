@@ -18,6 +18,10 @@ interface Props {
 // Track which images are low-res relative to the viewport
 type ImageSizing = "cover" | "contain";
 
+// Detect video URLs by extension
+const isVideo = (url: string) =>
+  /\.(mp4|webm|mov|avi|mkv|m4v|ogv)(\?|$)/i.test(url);
+
 // Ken Burns picks a random sub-effect each slide
 const KENBURNS_EFFECTS: TransitionEffect[] = [
   "zoom-in",
@@ -184,7 +188,9 @@ export function Slideshow({
 
   const sizing = imageSizing[current] || "cover";
   const nextIdx = (current + 1) % images.length;
-  const animStyle = getAnimationStyle(currentTransition, intervalMs);
+  const currentIsVideo = isVideo(images[current]);
+  const nextIsVideo = isVideo(images[nextIdx]);
+  const animStyle = currentIsVideo ? {} : getAnimationStyle(currentTransition, intervalMs);
   const transClasses = getTransitionClasses(currentTransition, isTransitioning);
   const currentCaption = imageSettings[current]?.caption;
 
@@ -194,8 +200,8 @@ export function Slideshow({
       onClick={handleInteraction}
       onTouchStart={handleInteraction}
     >
-      {/* Blurred background layer — only shown for low-res images */}
-      {sizing === "contain" && (
+      {/* Blurred background layer — only shown for low-res images (not videos) */}
+      {sizing === "contain" && !currentIsVideo && (
         <div className="absolute inset-0">
           <Image
             src={images[current]}
@@ -209,34 +215,47 @@ export function Slideshow({
         </div>
       )}
 
-      {/* Current image with animation */}
+      {/* Current media with animation */}
       <div
         key={current}
         className={`absolute inset-0 transition-all duration-700 ease-in-out ${transClasses}`}
         style={animStyle}
       >
-        <Image
-          src={images[current]}
-          alt={`${alt} - Photo ${current + 1}`}
-          fill
-          className={sizing === "contain" ? "object-contain" : "object-cover"}
-          priority={current < 3}
-          unoptimized
-          onLoad={(e) => handleImageLoad(current, e)}
-        />
+        {currentIsVideo ? (
+          <video
+            src={images[current]}
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
+        ) : (
+          <Image
+            src={images[current]}
+            alt={`${alt} - Photo ${current + 1}`}
+            fill
+            className={sizing === "contain" ? "object-contain" : "object-cover"}
+            priority={current < 3}
+            unoptimized
+            onLoad={(e) => handleImageLoad(current, e)}
+          />
+        )}
       </div>
 
       {/* Preload next image (hidden, but triggers onLoad for sizing detection) */}
-      <div className="hidden">
-        <Image
-          src={images[nextIdx]}
-          alt="preload"
-          width={1}
-          height={1}
-          unoptimized
-          onLoad={(e) => handleImageLoad(nextIdx, e)}
-        />
-      </div>
+      {!nextIsVideo && (
+        <div className="hidden">
+          <Image
+            src={images[nextIdx]}
+            alt="preload"
+            width={1}
+            height={1}
+            unoptimized
+            onLoad={(e) => handleImageLoad(nextIdx, e)}
+          />
+        </div>
+      )}
 
       {/* Image caption overlay */}
       {currentCaption && !isTransitioning && (

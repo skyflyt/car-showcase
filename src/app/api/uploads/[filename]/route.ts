@@ -14,6 +14,13 @@ const MIME_TYPES: Record<string, string> = {
   ".avif": "image/avif",
   ".svg": "image/svg+xml",
   ".bmp": "image/bmp",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
+  ".avi": "video/x-msvideo",
+  ".mkv": "video/x-matroska",
+  ".m4v": "video/mp4",
+  ".ogv": "video/ogg",
 };
 
 interface Params {

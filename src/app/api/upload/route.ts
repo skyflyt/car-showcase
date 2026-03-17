@@ -21,13 +21,13 @@ export async function POST(request: Request) {
     const urls: string[] = [];
 
     for (const file of files) {
-      // Validate it's an image
-      if (!file.type.startsWith("image/")) {
+      // Validate it's an image or video
+      if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
         continue;
       }
 
-      // Limit to 50MB per file
-      if (file.size > 50 * 1024 * 1024) {
+      // Limit to 500MB per file (videos can be large)
+      if (file.size > 500 * 1024 * 1024) {
         continue;
       }
 
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       const buffer = Buffer.from(bytes);
 
       // Generate unique filename: timestamp-hash.ext
-      const ext = path.extname(file.name) || ".jpg";
+      const ext = path.extname(file.name) || (file.type.startsWith("video/") ? ".mp4" : ".jpg");
       const hash = crypto.createHash("md5").update(buffer).digest("hex").slice(0, 8);
       const filename = `${Date.now()}-${hash}${ext}`;
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
     if (!urls.length) {
       return NextResponse.json(
-        { error: "No valid image files provided" },
+        { error: "No valid media files provided" },
         { status: 400 }
       );
     }
