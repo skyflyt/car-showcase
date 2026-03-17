@@ -466,7 +466,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                   )}
                   {/* Hero badge */}
                   {url === form.heroImage && (
-                    <div className="absolute top-2 left-2 bg-white/90 text-black text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+                    <div className={`absolute top-2 ${videoFile ? "left-16" : "left-2"} bg-white/90 text-black text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded`}>
                       Hero
                     </div>
                   )}
@@ -530,60 +530,121 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
             })}
           </div>
 
-          {/* Per-image settings editor */}
+          {/* Per-media settings popout modal */}
           {editingImageIdx !== null && editingImageIdx < form.images.length && (
-            <div className="p-4 rounded-lg bg-white/5 border border-white/10 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white/70">
-                  Media {editingImageIdx + 1} Settings
-                </h3>
-                <button
-                  onClick={() => setEditingImageIdx(null)}
-                  className="text-white/30 hover:text-white/60 text-sm"
-                >
-                  Close
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
-                    Transition Effect
-                  </label>
-                  <select
-                    value={getImageSetting(editingImageIdx).transition || ""}
-                    onChange={(e) =>
-                      updateImageSetting(editingImageIdx, {
-                        transition: (e.target.value || undefined) as TransitionEffect | undefined,
-                      })
-                    }
-                    className="admin-input"
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              onClick={() => setEditingImageIdx(null)}
+            >
+              <div
+                className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header with thumbnail */}
+                <div className="flex items-center gap-4 p-4 border-b border-white/10">
+                  <div className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-white/5">
+                    {isVideo(form.images[editingImageIdx]) ? (
+                      <video
+                        src={form.images[editingImageIdx]}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        muted
+                      />
+                    ) : (
+                      <Image
+                        src={form.images[editingImageIdx]}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-white">
+                      Media {editingImageIdx + 1} Settings
+                    </h3>
+                    <p className="text-white/30 text-xs mt-0.5">
+                      {isVideo(form.images[editingImageIdx]) ? "Video" : "Image"} &middot; {editingImageIdx + 1} of {form.images.length}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setEditingImageIdx(null)}
+                    className="text-white/30 hover:text-white text-2xl font-light w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5"
                   >
-                    <option value="">Use default ({form.defaultTransition})</option>
-                    {TRANSITION_EFFECTS.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                    &times;
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
-                    Caption / About This Image
-                  </label>
-                  <input
-                    type="text"
-                    value={getImageSetting(editingImageIdx).caption || ""}
-                    onChange={(e) =>
-                      updateImageSetting(editingImageIdx, {
-                        caption: e.target.value || undefined,
-                      })
-                    }
-                    className="admin-input"
-                    placeholder="e.g. Rear 3/4 view showing the F-22 inspired design..."
-                  />
-                  <p className="text-white/20 text-xs mt-1">
-                    Shows as a sleek overlay bubble on the image during slideshow
-                  </p>
+
+                {/* Settings body */}
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
+                      Transition Effect
+                    </label>
+                    <select
+                      value={getImageSetting(editingImageIdx).transition || ""}
+                      onChange={(e) =>
+                        updateImageSetting(editingImageIdx, {
+                          transition: (e.target.value || undefined) as TransitionEffect | undefined,
+                        })
+                      }
+                      className="admin-input"
+                    >
+                      <option value="">Use default ({form.defaultTransition})</option>
+                      {TRANSITION_EFFECTS.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
+                      Caption / About This Media
+                    </label>
+                    <input
+                      type="text"
+                      value={getImageSetting(editingImageIdx).caption || ""}
+                      onChange={(e) =>
+                        updateImageSetting(editingImageIdx, {
+                          caption: e.target.value || undefined,
+                        })
+                      }
+                      className="admin-input"
+                      placeholder="e.g. Rear 3/4 view showing the F-22 inspired design..."
+                    />
+                    <p className="text-white/20 text-xs mt-1">
+                      Shows as a sleek overlay bubble during slideshow
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between p-4 border-t border-white/10">
+                  <div className="flex gap-2">
+                    {editingImageIdx > 0 && (
+                      <button
+                        onClick={() => setEditingImageIdx(editingImageIdx - 1)}
+                        className="text-xs text-white/40 hover:text-white/70 px-3 py-1.5 rounded-lg hover:bg-white/5"
+                      >
+                        &larr; Prev
+                      </button>
+                    )}
+                    {editingImageIdx < form.images.length - 1 && (
+                      <button
+                        onClick={() => setEditingImageIdx(editingImageIdx + 1)}
+                        className="text-xs text-white/40 hover:text-white/70 px-3 py-1.5 rounded-lg hover:bg-white/5"
+                      >
+                        Next &rarr;
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setEditingImageIdx(null)}
+                    className="admin-btn admin-btn-primary text-sm"
+                  >
+                    Done
+                  </button>
                 </div>
               </div>
             </div>
