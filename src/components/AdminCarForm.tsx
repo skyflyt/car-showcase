@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -76,6 +76,8 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
   const [showAuction, setShowAuction] = useState(!!initialData?.auctionInfo);
   const [activeSection, setActiveSection] = useState("basic");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sections = [
     { key: "basic", label: "Basic Info" },
@@ -112,6 +114,44 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
       heroImage: prev.heroImage || urls[0],
     }));
     setImageUrl("");
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append("files", files[i]);
+      }
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Upload failed");
+      }
+
+      const { urls } = await res.json();
+      setForm((prev) => ({
+        ...prev,
+        images: [...prev.images, ...urls],
+        heroImage: prev.heroImage || urls[0],
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      // Reset the file input so the same file can be selected again
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const removeImage = (index: number) => {
@@ -309,17 +349,46 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
             </span>
           </h2>
 
-          {/* Add images */}
+          {/* Upload from computer */}
+          <div className="flex gap-3 items-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="admin-btn admin-btn-primary flex items-center gap-2"
+              disabled={uploading}
+            >
+              {uploading ? (
+                <>
+                  <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>Upload Photos</>
+              )}
+            </button>
+            <span className="text-white/30 text-xs">
+              Select one or more images from your computer
+            </span>
+          </div>
+
+          {/* Or add by URL */}
           <div className="flex gap-3">
             <textarea
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               className="admin-input flex-1"
-              placeholder="Paste image URL(s) — one per line for bulk add"
+              placeholder="Or paste image URL(s) — one per line for bulk add"
               rows={2}
             />
-            <button onClick={addImage} className="admin-btn admin-btn-primary self-end">
-              Add
+            <button onClick={addImage} className="admin-btn admin-btn-secondary self-end">
+              Add URL
             </button>
           </div>
 
