@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { TRANSITION_EFFECTS } from "@/lib/types";
@@ -84,10 +84,51 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [editingImageIdx, setEditingImageIdx] = useState<number | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isVideo = (url: string) =>
     /\.(mp4|webm|mov|avi|mkv|m4v|ogv)(\?|$)/i.test(url);
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((e: React.DragEvent, idx: number) => {
+    setDragIdx(idx);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(idx));
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIdx(idx);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverIdx(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, toIdx: number) => {
+    e.preventDefault();
+    const fromIdx = dragIdx;
+    setDragIdx(null);
+    setDragOverIdx(null);
+    if (fromIdx === null || fromIdx === toIdx) return;
+    setForm((prev) => {
+      const newImages = [...prev.images];
+      const [moved] = newImages.splice(fromIdx, 1);
+      newImages.splice(toIdx, 0, moved);
+      const newSettings = [...prev.imageSettings];
+      const [movedSetting] = newSettings.splice(fromIdx, 1);
+      if (movedSetting) newSettings.splice(toIdx, 0, movedSetting);
+      return { ...prev, images: newImages, imageSettings: newSettings };
+    });
+  }, [dragIdx]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragIdx(null);
+    setDragOverIdx(null);
+  }, []);
 
   const sections = [
     { key: "basic", label: "Basic Info" },
@@ -438,7 +479,18 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
               const hasSettings = setting.transition || setting.caption;
               const videoFile = isVideo(url);
               return (
-                <div key={i} className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-white/5">
+                <div
+                  key={i}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, i)}
+                  onDragOver={(e) => handleDragOver(e, i)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, i)}
+                  onDragEnd={handleDragEnd}
+                  className={`group relative aspect-[4/3] rounded-lg overflow-hidden bg-white/5 cursor-grab active:cursor-grabbing transition-all ${
+                    dragIdx === i ? "opacity-30 scale-95" : ""
+                  } ${dragOverIdx === i && dragIdx !== i ? "ring-2 ring-blue-400/60 scale-105" : ""}`}
+                >
                   {videoFile ? (
                     <video
                       src={url}
@@ -504,20 +556,24 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                         Hero
                       </button>
                     )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); moveImage(i, i - 1); }}
-                      className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
-                      disabled={i === 0}
-                    >
-                      &larr;
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); moveImage(i, i + 1); }}
-                      className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
-                      disabled={i === form.images.length - 1}
-                    >
-                      &rarr;
-                    </button>
+                    {i > 0 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); moveImage(i, 0); }}
+                        className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                        title="Move to front"
+                      >
+                        &#x21e4;
+                      </button>
+                    )}
+                    {i < form.images.length - 1 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); moveImage(i, form.images.length - 1); }}
+                        className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                        title="Move to end"
+                      >
+                        &#x21e5;
+                      </button>
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); removeImage(i); }}
                       className="text-xs bg-red-500/40 hover:bg-red-500/60 px-2 py-1 rounded"
@@ -616,6 +672,44 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                     <p className="text-white/20 text-xs mt-1">
                       Shows as a sleek overlay bubble during slideshow
                     </p>
+                  </div>
+
+                  {/* Position / reorder */}
+                  <div>
+                    <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
+                      Position
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={form.images.length}
+                        value={editingImageIdx + 1}
+                        onChange={(e) => {
+                          const newPos = Math.max(1, Math.min(form.images.length, parseInt(e.target.value) || 1)) - 1;
+                          if (newPos !== editingImageIdx) {
+                            moveImage(editingImageIdx, newPos);
+                            setEditingImageIdx(newPos);
+                          }
+                        }}
+                        className="admin-input w-20 text-center"
+                      />
+                      <span className="text-white/30 text-xs">of {form.images.length}</span>
+                      <button
+                        onClick={() => { moveImage(editingImageIdx, 0); setEditingImageIdx(0); }}
+                        className="text-xs text-white/40 hover:text-white/70 px-2 py-1 rounded hover:bg-white/5"
+                        disabled={editingImageIdx === 0}
+                      >
+                        Move to front
+                      </button>
+                      <button
+                        onClick={() => { moveImage(editingImageIdx, form.images.length - 1); setEditingImageIdx(form.images.length - 1); }}
+                        className="text-xs text-white/40 hover:text-white/70 px-2 py-1 rounded hover:bg-white/5"
+                        disabled={editingImageIdx === form.images.length - 1}
+                      >
+                        Move to end
+                      </button>
+                    </div>
                   </div>
                 </div>
 
