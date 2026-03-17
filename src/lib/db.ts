@@ -23,6 +23,7 @@ export type DbCar = {
   images: unknown;
   storyDismissSeconds: number;
   slideshowIntervalMs: number;
+  statsExpanded: boolean;
   displayMode: string;
   createdAt: Date;
   updatedAt: Date;

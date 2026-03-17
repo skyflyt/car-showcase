@@ -27,6 +27,7 @@ interface CarFormData {
   images: string[];
   storyDismissSeconds: number;
   slideshowIntervalMs: number;
+  statsExpanded: boolean;
   displayMode: string;
 }
 
@@ -56,6 +57,7 @@ const emptyForm: CarFormData = {
   images: [],
   storyDismissSeconds: 30,
   slideshowIntervalMs: 6000,
+  statsExpanded: false,
   displayMode: "interactive",
 };
 
@@ -73,6 +75,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
   const [newHighlight, setNewHighlight] = useState("");
   const [showAuction, setShowAuction] = useState(!!initialData?.auctionInfo);
   const [activeSection, setActiveSection] = useState("basic");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const sections = [
     { key: "basic", label: "Basic Info" },
@@ -328,8 +331,9 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                   src={url}
                   alt={`Photo ${i + 1}`}
                   fill
-                  className="object-cover"
+                  className="object-cover cursor-pointer"
                   unoptimized
+                  onClick={() => setPreviewImage(url)}
                 />
                 {/* Hero badge */}
                 {url === form.heroImage && (
@@ -337,14 +341,25 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                     Hero
                   </div>
                 )}
+                {/* Index badge */}
+                <div className="absolute top-2 right-2 bg-black/60 text-white/60 text-[10px] font-mono px-1.5 py-0.5 rounded">
+                  {i + 1}
+                </div>
                 {/* Controls overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent pt-6 pb-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                  <button
+                    onClick={() => setPreviewImage(url)}
+                    className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                    title="Preview"
+                  >
+                    Preview
+                  </button>
                   {url !== form.heroImage && (
                     <button
                       onClick={() => setAsHero(url)}
                       className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
                     >
-                      Set Hero
+                      Hero
                     </button>
                   )}
                   <button
@@ -371,6 +386,64 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
               </div>
             ))}
           </div>
+
+          {/* Image Preview Modal */}
+          {previewImage && (
+            <div
+              className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-8 cursor-pointer"
+              onClick={() => setPreviewImage(null)}
+            >
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="absolute top-6 right-8 text-white/60 hover:text-white text-3xl font-light z-10"
+              >
+                &times;
+              </button>
+              {/* Navigation arrows */}
+              {form.images.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const idx = form.images.indexOf(previewImage);
+                      const prevIdx = (idx - 1 + form.images.length) % form.images.length;
+                      setPreviewImage(form.images[prevIdx]);
+                    }}
+                    className="absolute left-6 top-1/2 -translate-y-1/2 text-white/40 hover:text-white text-4xl font-light z-10 w-12 h-12 flex items-center justify-center"
+                  >
+                    &lsaquo;
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const idx = form.images.indexOf(previewImage);
+                      const nextIdx = (idx + 1) % form.images.length;
+                      setPreviewImage(form.images[nextIdx]);
+                    }}
+                    className="absolute right-6 top-1/2 -translate-y-1/2 text-white/40 hover:text-white text-4xl font-light z-10 w-12 h-12 flex items-center justify-center"
+                  >
+                    &rsaquo;
+                  </button>
+                </>
+              )}
+              <div className="relative w-full h-full max-w-[90vw] max-h-[85vh]">
+                <Image
+                  src={previewImage}
+                  alt="Preview"
+                  fill
+                  className="object-contain"
+                  unoptimized
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-sm">
+                {form.images.indexOf(previewImage) + 1} / {form.images.length}
+                {previewImage === form.heroImage && (
+                  <span className="ml-3 text-white/60 uppercase text-xs tracking-wider">Hero Image</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -578,6 +651,25 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                 max={120}
               />
             </div>
+          </div>
+
+          <div className="mt-6">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={form.statsExpanded}
+                onChange={(e) => updateField("statsExpanded", e.target.checked)}
+                className="w-4 h-4 rounded border-white/20 bg-white/5 text-white accent-white/80"
+              />
+              <div>
+                <span className="text-sm text-white/70 group-hover:text-white/90 transition-colors">
+                  Start with specs expanded
+                </span>
+                <p className="text-white/30 text-xs mt-0.5">
+                  Show all specification fields by default instead of the first 5
+                </p>
+              </div>
+            </label>
           </div>
 
           <div className="mt-8 p-4 rounded-lg bg-white/5 text-sm text-white/40">

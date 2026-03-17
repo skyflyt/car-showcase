@@ -35,5 +35,6 @@ export interface CarData {
   images: string[];
   storyDismissSeconds: number;
   slideshowIntervalMs: number;
+  statsExpanded: boolean;
   displayMode: string;
 }

@@ -42,6 +42,7 @@ export default async function CarPage({ params, searchParams }: Props) {
     images: dbCar.images as string[],
     storyDismissSeconds: dbCar.storyDismissSeconds,
     slideshowIntervalMs: dbCar.slideshowIntervalMs,
+    statsExpanded: dbCar.statsExpanded,
     displayMode: dbCar.displayMode,
   };
 
