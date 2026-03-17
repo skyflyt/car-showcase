@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 interface Params {
@@ -13,6 +14,11 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 export async function PUT(request: Request, { params }: Params) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   const data = await request.json();
 
@@ -52,6 +58,11 @@ export async function PUT(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   await prisma.car.delete({ where: { id } });
   return NextResponse.json({ success: true });

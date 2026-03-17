@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { auth, signOut } from "@/lib/auth";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+
   return (
     <div className="min-h-screen bg-black text-white">
       <nav className="border-b border-white/10 px-8 py-4">
@@ -14,7 +17,7 @@ export default function AdminLayout({
               href="/admin"
               className="text-lg font-light tracking-tight"
             >
-              Car <span className="font-semibold">Showcase</span>
+              The <span className="font-semibold">Garage</span>
               <span className="text-white/30 ml-2 text-sm">Admin</span>
             </Link>
           </div>
@@ -31,6 +34,26 @@ export default function AdminLayout({
             >
               View Site
             </Link>
+            {session?.user && (
+              <>
+                <span className="text-white/30 text-xs">
+                  {session.user.name || session.user.email}
+                </span>
+                <form
+                  action={async () => {
+                    "use server";
+                    await signOut({ redirectTo: "/" });
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="text-white/20 hover:text-white/50 transition-colors text-xs"
+                  >
+                    Sign out
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </nav>

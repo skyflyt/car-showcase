@@ -1,0 +1,24 @@
+import NextAuth from "next-auth";
+import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  providers: [
+    MicrosoftEntraID({
+      clientId: process.env.AZURE_AD_CLIENT_ID!,
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+      issuer: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/v2.0`,
+    }),
+  ],
+  pages: {
+    signIn: "/auth/signin",
+  },
+  callbacks: {
+    authorized({ auth: session }) {
+      // Middleware matcher ensures this only runs on protected routes
+      // (/admin/*, /api/cars/*, /api/upload/*)
+      // Require a signed-in user for all matched routes
+      return !!session?.user;
+    },
+  },
+  trustHost: true,
+});
