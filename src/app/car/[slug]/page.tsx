@@ -40,6 +40,8 @@ export default async function CarPage({ params, searchParams }: Props) {
     highlights: dbCar.highlights as string[],
     auctionInfo: dbCar.auctionInfo as CarData["auctionInfo"],
     images: dbCar.images as string[],
+    imageSettings: (dbCar.imageSettings as CarData["imageSettings"]) || [],
+    defaultTransition: (dbCar.defaultTransition as CarData["defaultTransition"]) || "fade",
     storyDismissSeconds: dbCar.storyDismissSeconds,
     slideshowIntervalMs: dbCar.slideshowIntervalMs,
     statsExpanded: dbCar.statsExpanded,

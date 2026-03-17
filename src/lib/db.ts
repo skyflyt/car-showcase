@@ -21,6 +21,8 @@ export type DbCar = {
   highlights: unknown;
   auctionInfo: unknown;
   images: unknown;
+  imageSettings: unknown;
+  defaultTransition: string;
   storyDismissSeconds: number;
   slideshowIntervalMs: number;
   statsExpanded: boolean;

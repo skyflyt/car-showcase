@@ -22,6 +22,8 @@ model Car {
   highlights          Json     @default("[]")
   auctionInfo         Json?
   images              Json     @default("[]")
+  imageSettings       Json     @default("[]")
+  defaultTransition   String   @default("fade")
   storyDismissSeconds Int      @default(30)
   slideshowIntervalMs Int      @default(6000)
   statsExpanded       Boolean  @default(false)

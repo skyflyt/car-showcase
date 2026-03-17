@@ -52,6 +52,8 @@ export function CarDisplay({ car, mode }: Props) {
     <main className="h-screen w-screen overflow-hidden bg-black text-white relative">
       <Slideshow
         images={car.images}
+        imageSettings={car.imageSettings}
+        defaultTransition={car.defaultTransition}
         alt={`${car.year} ${car.make} ${car.model}`}
         intervalMs={car.slideshowIntervalMs}
         mode={mode}
