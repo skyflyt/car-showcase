@@ -50,13 +50,13 @@ export function StoryPanel({
         onClick={onClose}
       />
 
-      {/* Panel */}
+      {/* Panel — wider at max-w-3xl with two-column layout */}
       <div
-        className={`story-panel fixed top-0 right-0 h-full z-50 w-full max-w-xl ${
+        className={`story-panel fixed top-0 right-0 h-full z-50 w-full max-w-3xl ${
           isOpen ? "story-panel-open" : "story-panel-closed"
         }`}
       >
-        <div className="h-full bg-black/80 backdrop-blur-xl border-l border-white/10 overflow-y-auto">
+        <div className="h-full bg-black/80 backdrop-blur-xl border-l border-white/10 flex flex-col">
           {/* Countdown bar */}
           {isOpen && (
             <div className="absolute top-0 left-0 right-0 h-0.5">
@@ -71,11 +71,11 @@ export function StoryPanel({
             </div>
           )}
 
-          <div className="p-8 pt-12">
+          <div className="flex-1 overflow-y-auto p-10 pt-14">
             {/* Close hint */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors text-sm tracking-wider uppercase"
+              className="absolute top-4 right-6 text-white/30 hover:text-white/60 transition-colors text-sm tracking-wider uppercase"
             >
               Close
             </button>
@@ -85,70 +85,78 @@ export function StoryPanel({
               The <span className="italic font-semibold">Story</span>
             </h2>
 
-            {/* Story text */}
-            {displayText && (
-              <div className="mb-10">
-                {displayText.split("\n\n").map((paragraph, i) => (
-                  <p
-                    key={i}
-                    className="text-white/70 leading-relaxed mb-4 text-[15px]"
-                  >
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            )}
-
-            {/* Highlights */}
-            {highlights.length > 0 && (
-              <div className="mb-10">
-                <h3 className="text-xs uppercase tracking-[0.2em] text-white/40 mb-4">
-                  Highlights
-                </h3>
-                <ul className="space-y-3">
-                  {highlights.map((h, i) => (
-                    <li
+            {/* Two-column layout: story text + sidebar (highlights/provenance) */}
+            <div className={highlights.length > 0 || auctionInfo ? "grid grid-cols-5 gap-10" : ""}>
+              {/* Story text — wider column */}
+              {displayText && (
+                <div className={highlights.length > 0 || auctionInfo ? "col-span-3" : ""}>
+                  {displayText.split("\n\n").map((paragraph, i) => (
+                    <p
                       key={i}
-                      className="flex items-start gap-3 text-white/60 text-sm"
+                      className="text-white/70 leading-relaxed mb-4 text-[15px]"
                     >
-                      <span className="text-white/20 mt-0.5">&#9670;</span>
-                      {h}
-                    </li>
+                      {paragraph}
+                    </p>
                   ))}
-                </ul>
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* Auction Info */}
-            {auctionInfo && (
-              <div className="border-t border-white/10 pt-8">
-                <h3 className="text-xs uppercase tracking-[0.2em] text-white/40 mb-4">
-                  Provenance
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    ["Auction House", auctionInfo.house],
-                    ["Event", auctionInfo.event],
-                    ["Lot", auctionInfo.lot],
-                    ["Sold", auctionInfo.soldPrice],
-                    ["Chassis", auctionInfo.chassis],
-                  ].map(
-                    ([label, value]) =>
-                      value && (
-                        <div key={label}>
-                          <div className="text-white/30 text-xs uppercase tracking-wider mb-1">
-                            {label}
-                          </div>
-                          <div className="text-white/70 text-sm">{value}</div>
-                        </div>
-                      )
+              {/* Sidebar */}
+              {(highlights.length > 0 || auctionInfo) && (
+                <div className="col-span-2 space-y-8">
+                  {/* Highlights */}
+                  {highlights.length > 0 && (
+                    <div>
+                      <h3 className="text-xs uppercase tracking-[0.2em] text-white/40 mb-4">
+                        Highlights
+                      </h3>
+                      <ul className="space-y-3">
+                        {highlights.map((h, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-3 text-white/60 text-sm"
+                          >
+                            <span className="text-white/20 mt-0.5">&#9670;</span>
+                            {h}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Auction Info */}
+                  {auctionInfo && (
+                    <div className="border-t border-white/10 pt-6">
+                      <h3 className="text-xs uppercase tracking-[0.2em] text-white/40 mb-4">
+                        Provenance
+                      </h3>
+                      <div className="space-y-3">
+                        {[
+                          ["Auction House", auctionInfo.house],
+                          ["Event", auctionInfo.event],
+                          ["Lot", auctionInfo.lot],
+                          ["Sold", auctionInfo.soldPrice],
+                          ["Chassis", auctionInfo.chassis],
+                        ].map(
+                          ([label, value]) =>
+                            value && (
+                              <div key={label}>
+                                <div className="text-white/30 text-xs uppercase tracking-wider mb-0.5">
+                                  {label}
+                                </div>
+                                <div className="text-white/70 text-sm">{value}</div>
+                              </div>
+                            )
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Bottom padding for scroll */}
-            <div className="h-16" />
+            {/* Bottom padding */}
+            <div className="h-8" />
           </div>
         </div>
       </div>

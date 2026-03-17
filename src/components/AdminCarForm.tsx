@@ -3,6 +3,8 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { TRANSITION_EFFECTS } from "@/lib/types";
+import type { TransitionEffect, ImageEntry } from "@/lib/types";
 
 interface CarFormData {
   id?: string;
@@ -25,6 +27,8 @@ interface CarFormData {
     chassis: string;
   } | null;
   images: string[];
+  imageSettings: ImageEntry[];
+  defaultTransition: string;
   storyDismissSeconds: number;
   slideshowIntervalMs: number;
   statsExpanded: boolean;
@@ -55,6 +59,8 @@ const emptyForm: CarFormData = {
   highlights: [],
   auctionInfo: null,
   images: [],
+  imageSettings: [],
+  defaultTransition: "fade",
   storyDismissSeconds: 30,
   slideshowIntervalMs: 6000,
   statsExpanded: false,
@@ -77,6 +83,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
   const [activeSection, setActiveSection] = useState("basic");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [editingImageIdx, setEditingImageIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sections = [
@@ -100,10 +107,26 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
     setForm((prev) => ({ ...prev, stats: { ...prev.stats, [key]: value } }));
   };
 
+  // Get/set image settings helper
+  const getImageSetting = (index: number): ImageEntry => {
+    return form.imageSettings[index] || { url: form.images[index] };
+  };
+
+  const updateImageSetting = (index: number, updates: Partial<ImageEntry>) => {
+    setForm((prev) => {
+      const newSettings = [...prev.imageSettings];
+      // Ensure array is long enough
+      while (newSettings.length <= index) {
+        newSettings.push({ url: prev.images[newSettings.length] || "" });
+      }
+      newSettings[index] = { ...newSettings[index], ...updates };
+      return { ...prev, imageSettings: newSettings };
+    });
+  };
+
   const addImage = () => {
     const trimmed = imageUrl.trim();
     if (!trimmed) return;
-    // Support pasting multiple URLs (one per line)
     const urls = trimmed
       .split("\n")
       .map((u) => u.trim())
@@ -111,6 +134,10 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
     setForm((prev) => ({
       ...prev,
       images: [...prev.images, ...urls],
+      imageSettings: [
+        ...prev.imageSettings,
+        ...urls.map((url) => ({ url })),
+      ],
       heroImage: prev.heroImage || urls[0],
     }));
     setImageUrl("");
@@ -143,13 +170,16 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
       setForm((prev) => ({
         ...prev,
         images: [...prev.images, ...urls],
+        imageSettings: [
+          ...prev.imageSettings,
+          ...urls.map((url: string) => ({ url })),
+        ],
         heroImage: prev.heroImage || urls[0],
       }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
-      // Reset the file input so the same file can be selected again
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -157,15 +187,18 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
   const removeImage = (index: number) => {
     setForm((prev) => {
       const newImages = prev.images.filter((_, i) => i !== index);
+      const newSettings = prev.imageSettings.filter((_, i) => i !== index);
       return {
         ...prev,
         images: newImages,
+        imageSettings: newSettings,
         heroImage:
           prev.heroImage === prev.images[index]
             ? newImages[0] || ""
             : prev.heroImage,
       };
     });
+    if (editingImageIdx === index) setEditingImageIdx(null);
   };
 
   const setAsHero = (url: string) => {
@@ -178,7 +211,10 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
       const newImages = [...prev.images];
       const [moved] = newImages.splice(from, 1);
       newImages.splice(to, 0, moved);
-      return { ...prev, images: newImages };
+      const newSettings = [...prev.imageSettings];
+      const [movedSetting] = newSettings.splice(from, 1);
+      if (movedSetting) newSettings.splice(to, 0, movedSetting);
+      return { ...prev, images: newImages, imageSettings: newSettings };
     });
   };
 
@@ -306,7 +342,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                 value={form.model}
                 onChange={(e) => updateField("model", e.target.value)}
                 className="admin-input"
-                placeholder="Reventón"
+                placeholder="Revent\u00f3n"
               />
             </div>
           </div>
@@ -320,7 +356,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                 value={form.subtitle}
                 onChange={(e) => updateField("subtitle", e.target.value)}
                 className="admin-input"
-                placeholder="Coupe — #12 of 20"
+                placeholder="Coupe \u2014 #12 of 20"
               />
             </div>
             <div>
@@ -332,7 +368,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                 value={form.color}
                 onChange={(e) => updateField("color", e.target.value)}
                 className="admin-input"
-                placeholder="Grigio Reventón"
+                placeholder="Grigio Revent\u00f3n"
               />
             </div>
           </div>
@@ -384,7 +420,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               className="admin-input flex-1"
-              placeholder="Or paste image URL(s) — one per line for bulk add"
+              placeholder="Or paste image URL(s) \u2014 one per line for bulk add"
               rows={2}
             />
             <button onClick={addImage} className="admin-btn admin-btn-secondary self-end">
@@ -394,67 +430,143 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
 
           {/* Image grid */}
           <div className="grid grid-cols-4 gap-3">
-            {form.images.map((url, i) => (
-              <div key={i} className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-white/5">
-                <Image
-                  src={url}
-                  alt={`Photo ${i + 1}`}
-                  fill
-                  className="object-cover cursor-pointer"
-                  unoptimized
-                  onClick={() => setPreviewImage(url)}
-                />
-                {/* Hero badge */}
-                {url === form.heroImage && (
-                  <div className="absolute top-2 left-2 bg-white/90 text-black text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
-                    Hero
-                  </div>
-                )}
-                {/* Index badge */}
-                <div className="absolute top-2 right-2 bg-black/60 text-white/60 text-[10px] font-mono px-1.5 py-0.5 rounded">
-                  {i + 1}
-                </div>
-                {/* Controls overlay */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent pt-6 pb-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
-                  <button
+            {form.images.map((url, i) => {
+              const setting = getImageSetting(i);
+              const hasSettings = setting.transition || setting.caption;
+              return (
+                <div key={i} className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-white/5">
+                  <Image
+                    src={url}
+                    alt={`Photo ${i + 1}`}
+                    fill
+                    className="object-cover cursor-pointer"
+                    unoptimized
                     onClick={() => setPreviewImage(url)}
-                    className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
-                    title="Preview"
-                  >
-                    Preview
-                  </button>
-                  {url !== form.heroImage && (
+                  />
+                  {/* Hero badge */}
+                  {url === form.heroImage && (
+                    <div className="absolute top-2 left-2 bg-white/90 text-black text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+                      Hero
+                    </div>
+                  )}
+                  {/* Index + settings indicator */}
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    {hasSettings && (
+                      <div className="bg-blue-500/60 text-white text-[10px] px-1.5 py-0.5 rounded" title="Has custom settings">
+                        {setting.caption ? "T" : ""}{setting.transition ? "A" : ""}
+                      </div>
+                    )}
+                    <div className="bg-black/60 text-white/60 text-[10px] font-mono px-1.5 py-0.5 rounded">
+                      {i + 1}
+                    </div>
+                  </div>
+                  {/* Controls overlay */}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent pt-6 pb-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                     <button
-                      onClick={() => setAsHero(url)}
+                      onClick={() => setEditingImageIdx(editingImageIdx === i ? null : i)}
+                      className="text-xs bg-blue-500/30 hover:bg-blue-500/50 px-2 py-1 rounded"
+                      title="Edit settings"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setPreviewImage(url)}
                       className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
                     >
-                      Hero
+                      View
                     </button>
-                  )}
-                  <button
-                    onClick={() => moveImage(i, i - 1)}
-                    className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
-                    disabled={i === 0}
+                    {url !== form.heroImage && (
+                      <button
+                        onClick={() => setAsHero(url)}
+                        className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                      >
+                        Hero
+                      </button>
+                    )}
+                    <button
+                      onClick={() => moveImage(i, i - 1)}
+                      className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                      disabled={i === 0}
+                    >
+                      &larr;
+                    </button>
+                    <button
+                      onClick={() => moveImage(i, i + 1)}
+                      className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                      disabled={i === form.images.length - 1}
+                    >
+                      &rarr;
+                    </button>
+                    <button
+                      onClick={() => removeImage(i)}
+                      className="text-xs bg-red-500/40 hover:bg-red-500/60 px-2 py-1 rounded"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Per-image settings editor */}
+          {editingImageIdx !== null && editingImageIdx < form.images.length && (
+            <div className="p-4 rounded-lg bg-white/5 border border-white/10 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white/70">
+                  Image {editingImageIdx + 1} Settings
+                </h3>
+                <button
+                  onClick={() => setEditingImageIdx(null)}
+                  className="text-white/30 hover:text-white/60 text-sm"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
+                    Transition Effect
+                  </label>
+                  <select
+                    value={getImageSetting(editingImageIdx).transition || ""}
+                    onChange={(e) =>
+                      updateImageSetting(editingImageIdx, {
+                        transition: (e.target.value || undefined) as TransitionEffect | undefined,
+                      })
+                    }
+                    className="admin-input"
                   >
-                    &larr;
-                  </button>
-                  <button
-                    onClick={() => moveImage(i, i + 1)}
-                    className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
-                    disabled={i === form.images.length - 1}
-                  >
-                    &rarr;
-                  </button>
-                  <button
-                    onClick={() => removeImage(i)}
-                    className="text-xs bg-red-500/40 hover:bg-red-500/60 px-2 py-1 rounded"
-                  >
-                    &times;
-                  </button>
+                    <option value="">Use default ({form.defaultTransition})</option>
+                    {TRANSITION_EFFECTS.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
+                    Caption / About This Image
+                  </label>
+                  <input
+                    type="text"
+                    value={getImageSetting(editingImageIdx).caption || ""}
+                    onChange={(e) =>
+                      updateImageSetting(editingImageIdx, {
+                        caption: e.target.value || undefined,
+                      })
+                    }
+                    className="admin-input"
+                    placeholder="e.g. Rear 3/4 view showing the F-22 inspired design..."
+                  />
+                  <p className="text-white/20 text-xs mt-1">
+                    Shows as a sleek overlay bubble on the image during slideshow
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
 
           {/* Image Preview Modal */}
           {previewImage && (
@@ -468,7 +580,6 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
               >
                 &times;
               </button>
-              {/* Navigation arrows */}
               {form.images.length > 1 && (
                 <>
                   <button
@@ -545,7 +656,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
           <h2 className="text-xl font-semibold mb-4">Story & Description</h2>
           <div>
             <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
-              Description (short — shown in stats area)
+              Description (short \u2014 shown in stats area)
             </label>
             <textarea
               value={form.description}
@@ -557,7 +668,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
           </div>
           <div>
             <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
-              Story (long — shown in slide-out panel)
+              Story (long \u2014 shown in slide-out panel)
             </label>
             <textarea
               value={form.story}
@@ -673,7 +784,7 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
       {activeSection === "settings" && (
         <div className="space-y-6">
           <h2 className="text-xl font-semibold mb-4">Display Settings</h2>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
                 Default Mode
@@ -687,6 +798,27 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
                 <option value="display">Display (Passive Screen)</option>
               </select>
             </div>
+            <div>
+              <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
+                Default Transition Effect
+              </label>
+              <select
+                value={form.defaultTransition}
+                onChange={(e) => updateField("defaultTransition", e.target.value)}
+                className="admin-input"
+              >
+                {TRANSITION_EFFECTS.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-white/20 text-xs mt-1">
+                Applied to all images unless overridden per-image
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
                 Slideshow Interval (ms)
@@ -742,11 +874,19 @@ export function AdminCarForm({ initialData, isEdit = false }: Props) {
           </div>
 
           <div className="mt-8 p-4 rounded-lg bg-white/5 text-sm text-white/40">
+            <p className="font-semibold text-white/60 mb-2">Transition Reference:</p>
+            <p className="mb-1"><strong className="text-white/50">Fade</strong> — Simple crossfade between images.</p>
+            <p className="mb-1"><strong className="text-white/50">Zoom In / Out</strong> — Slow Ken Burns-style zoom during display.</p>
+            <p className="mb-1"><strong className="text-white/50">Pan Left / Right</strong> — Slow horizontal camera pan across the image.</p>
+            <p className="mb-1"><strong className="text-white/50">Slide Left / Right</strong> — Image slides in from the side.</p>
+            <p><strong className="text-white/50">Ken Burns</strong> — Randomly picks zoom/pan each slide for a cinematic feel.</p>
+          </div>
+
+          <div className="mt-4 p-4 rounded-lg bg-white/5 text-sm text-white/40">
             <p className="font-semibold text-white/60 mb-2">Mode Reference:</p>
             <p className="mb-1">
               <strong className="text-white/50">Interactive</strong> — For iPad
               kiosks. Users can tap to navigate slides and open the story panel.
-              Story auto-dismisses after the configured time.
             </p>
             <p>
               <strong className="text-white/50">Display</strong> — For passive

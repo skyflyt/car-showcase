@@ -1,6 +1,7 @@
 import { prisma, type DbCar } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { AdminCarForm } from "@/components/AdminCarForm";
+import type { ImageEntry } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,8 @@ export default async function EditCarPage({ params }: Props) {
       chassis: string;
     } | null,
     images: car.images as string[],
+    imageSettings: (car.imageSettings as ImageEntry[]) || [],
+    defaultTransition: (car.defaultTransition as string) || "fade",
     storyDismissSeconds: car.storyDismissSeconds,
     slideshowIntervalMs: car.slideshowIntervalMs,
     statsExpanded: car.statsExpanded,
