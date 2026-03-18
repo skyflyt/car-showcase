@@ -224,20 +224,21 @@ export function Slideshow({
         {currentIsVideo ? (
           <video
             ref={(el) => {
-              // iOS may not autoplay on remounted elements — force play
+              // iOS / Kiosk Pro may not autoplay on remounted elements — force play
               if (el) {
                 el.muted = true;
                 el.playsInline = true;
                 el.play().catch(() => {});
               }
             }}
-            src={images[current]}
             className="absolute inset-0 w-full h-full object-cover"
             autoPlay
-            muted
             loop
+            muted
             playsInline
-          />
+          >
+            <source src={images[current]} type={images[current].endsWith(".webm") ? "video/webm" : "video/mp4"} />
+          </video>
         ) : (
           <Image
             src={images[current]}
