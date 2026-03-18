@@ -223,6 +223,14 @@ export function Slideshow({
       >
         {currentIsVideo ? (
           <video
+            ref={(el) => {
+              // iOS may not autoplay on remounted elements — force play
+              if (el) {
+                el.muted = true;
+                el.playsInline = true;
+                el.play().catch(() => {});
+              }
+            }}
             src={images[current]}
             className="absolute inset-0 w-full h-full object-cover"
             autoPlay
