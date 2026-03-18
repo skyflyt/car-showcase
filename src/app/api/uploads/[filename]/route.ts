@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readFile, stat } from "fs/promises";
+import { stat, open } from "fs/promises";
 import path from "path";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
@@ -27,26 +27,63 @@ interface Params {
   params: Promise<{ filename: string }>;
 }
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { filename } = await params;
 
   // Prevent directory traversal
   const safeName = path.basename(filename);
   const filepath = path.join(UPLOAD_DIR, safeName);
+  const ext = path.extname(safeName).toLowerCase();
+  const contentType = MIME_TYPES[ext] || "application/octet-stream";
 
+  let fileStat;
   try {
-    await stat(filepath);
-    const buffer = await readFile(filepath);
-    const ext = path.extname(safeName).toLowerCase();
-    const contentType = MIME_TYPES[ext] || "application/octet-stream";
-
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable",
-      },
-    });
+    fileStat = await stat(filepath);
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  const fileSize = fileStat.size;
+  const rangeHeader = request.headers.get("range");
+
+  // Handle range requests (required for iOS video playback)
+  if (rangeHeader) {
+    const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+    if (match) {
+      const start = parseInt(match[1], 10);
+      const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+      const chunkSize = end - start + 1;
+
+      const fileHandle = await open(filepath, "r");
+      const buffer = Buffer.alloc(chunkSize);
+      await fileHandle.read(buffer, 0, chunkSize, start);
+      await fileHandle.close();
+
+      return new NextResponse(buffer, {
+        status: 206,
+        headers: {
+          "Content-Type": contentType,
+          "Content-Length": String(chunkSize),
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
+    }
+  }
+
+  // Full file response — still include Content-Length and Accept-Ranges
+  const fileHandle = await open(filepath, "r");
+  const buffer = Buffer.alloc(fileSize);
+  await fileHandle.read(buffer, 0, fileSize, 0);
+  await fileHandle.close();
+
+  return new NextResponse(buffer, {
+    headers: {
+      "Content-Type": contentType,
+      "Content-Length": String(fileSize),
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+  });
 }
